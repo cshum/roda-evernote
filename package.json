@@ -1,0 +1,30 @@
+{
+  "name": "roda-evernote",
+  "version": "0.0.1",
+  "description": "Evernote synchronization with Rodabase.",
+  "author": "Adrian C Shum <adrian@cshum.com>",
+  "scripts": {
+    "test": "set -e; for t in test/*.js; do node $t; done"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:cshum/roda-evernote.git"
+  },
+  "keywords": [
+    "Rodabase",
+    "Evernote",
+    "sync"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "evernote": "^1.25.8",
+    "extend": "^2.0.1",
+    "ginga": "^1.0.0",
+    "highland": "^2.5.1"
+  },
+  "devDependencies": {
+    "tape": "^3.0.3",
+    "roda-rest": "^0.3.0",
+    "rodabase": "^1.3.2"
+  }
+}
