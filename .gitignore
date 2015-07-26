@@ -3,4 +3,4 @@ db
 .DS_Store
 *.swp
 npm-debug.log
-config.json
+tokens.json
