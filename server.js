@@ -1,6 +1,6 @@
-var test     = require('tape'),
-    rodabase = require('rodabase'),
-    evernote = require('../'),
+var rodabase = require('rodabase'),
+    evernote = require('./'),
+    express  = require('express'),
     rest     = require('roda-rest');
 
 var roda = rodabase('./db');
@@ -15,4 +15,4 @@ app.get('/api/sync/:token', function(req, res){
 });
 app.use('/api', rest(roda)); //roda rest api
 app.listen(3000);
-
+console.log('roda-evernote is listening on port '+ 3000);
