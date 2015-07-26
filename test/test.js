@@ -27,7 +27,7 @@ tokens.forEach(function(token){
       typeSeq[doc.type] = seq;
     });
     ever.sync(token, function(err){
-      t.notOk(err, 'No error');
+      t.notOk(err, 'Sync no error');
       stream.destroy();
       store.get(userId, function(err, doc){
         t.equal(doc.lastUpdateCount, seq, 'lastUpdateCount');
@@ -53,10 +53,10 @@ tokens.forEach(function(token){
       t.ok(doc.active, 'Active');
       t.notOk(doc.deleted, 'No deleted timestamp');
       var content = doc.content;
+      store.liveStream().each(H.log);
       store.liveStream().reject(function(doc){
         return doc.type === 'meta';
       }).take(2).toArray(function(list){
-        console.log(list);
         var link = list[0];
         var doc = list[1];
         //link
@@ -72,12 +72,13 @@ tokens.forEach(function(token){
         t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
-      });
-      ever.sync(token, function(err){
         store.get(userId, function(err, doc){
           t.equal(doc.lastUpdateCount, seq, 'lastUpdateCount');
           t.end();
         });
+      });
+      ever.sync(token, function(err){
+        t.notOk(err, 'Sync no error');
       });
     });
   });
