@@ -11,12 +11,13 @@ var ever = evernote(roda, 'evernote');
 var tokens = require('./tokens.json');
 
 tokens.forEach(function(token){
+  var userId;
+  var seq = 0;
   test('Full Sync', function(t){
-    var seq = 0;
     var typeSeq = {};
-    var userId;
     var stream = store.liveStream().reject(function(doc){
-      userId = doc.userId;
+      if(!userId)
+        userId = doc.userId;
       return doc.type === 'meta';
     }).each(function(doc){
       t.ok(doc.updateSequenceNum > (typeSeq[doc.type] || 0), 'Type Seq incremental');
@@ -33,6 +34,64 @@ tokens.forEach(function(token){
         t.end();
       });
     });
+  });
+  var noteGuid;
+  test('Create Note', function(t){
+    var ts = Date.now();
+    store.post({
+      type: 'note',
+      userId: userId,
+      title: "Test "+(new Date()),
+      content: '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
+        '"http://xml.evernote.com/pub/enml2.dtd"><en-note>'+
+        '<span style="font-weight:bold;">Hello world '+(new Date())+'.</span></en-note>'
+    }, function(err, doc){
+      t.ok(doc.dirty, 'Dirty flag');
+      t.ok(doc.contentDirty, 'Content dirty flag');
+      t.ok(doc.created > ts, 'Created timestamp');
+      t.ok(doc.updated > ts, 'Updated timestamp');
+      t.ok(doc.active, 'Active');
+      t.notOk(doc.deleted, 'No deleted timestamp');
+      var content = doc.content;
+      store.liveStream().reject(function(doc){
+        return doc.type === 'meta';
+      }).take(2).toArray(function(list){
+        console.log(list);
+        var link = list[0];
+        var doc = list[1];
+        //link
+        t.equal(link.type, 'link', 'Link');
+        t.equal(link.link, doc.guid, 'Link and doc guid');
+        //doc
+        noteGuid = doc.guid;
+        t.notOk(doc.dirty, 'Not dirty after sync');
+        t.notOk(doc.contentDirty, 'Not content dirty after sync');
+        t.equal(doc.type, 'note', 'Note type');
+        t.equal(doc.userId, userId, 'userId');
+        t.equal(doc.content, content, 'content');
+        t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
+        t.ok(doc.active, 'Active');
+        seq = doc.updateSequenceNum;
+      });
+      ever.sync(token, function(err){
+        store.get(userId, function(err, doc){
+          t.equal(doc.lastUpdateCount, seq, 'lastUpdateCount');
+          t.end();
+        });
+      });
+    });
+  });
+  return;
+  test('Update Note', function(t){
+    //update multi times
+    //update title only
+    //update content dirty
+  });
+  test('Incremental Sync', function(t){
+    //create/update note from another client then sync
+  });
+  test('Tag Conflict', function(t){
+
   });
 });
 
