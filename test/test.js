@@ -12,7 +12,7 @@ var tokens = require('./tokens.json');
 tokens.forEach(function(token){
   var userId;
   var seq = 0;
-  test('Full Sync', function(t){
+  test('Full sync', function(t){
     var typeSeq = {};
     var stream = store.liveStream().reject(function(doc){
       if(!userId)
@@ -39,7 +39,7 @@ tokens.forEach(function(token){
   var content = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
     '"http://xml.evernote.com/pub/enml2.dtd"><en-note>'+
     '<span style="font-weight:bold;">Content '+(new Date())+'.</span></en-note>';
-  test('Create Note', function(t){
+  test('Create note', function(t){
     var ts = Date.now();
     store.post({
       type: 'note',
@@ -82,7 +82,7 @@ tokens.forEach(function(token){
       });
     });
   });
-  test('Update Note', function(t){
+  test('Update note', function(t){
     var tx;
     var ts = Date.now();
     tx = roda.transaction();
@@ -127,7 +127,7 @@ tokens.forEach(function(token){
       });
     });
   });
-  test('Update Note content dirty', function(t){
+  test('Update note content', function(t){
     var tx;
     var ts = Date.now();
     var content2 = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
@@ -175,12 +175,48 @@ tokens.forEach(function(token){
       });
     });
   });
-  return;
+  test('Trash note', function(t){
+    var ts = Date.now();
+    store.put(noteGuid, {
+      active: false
+    }, function(err, doc){
+      t.equal(doc.type, 'note', 'Note type');
+      t.equal(doc.userId, userId, 'userId');
+      t.equal(doc.guid, noteGuid, 'Doc guid');
+      t.ok(doc.title, 'Has title');
+      t.ok(doc.content, 'Has content');
+      t.ok(doc.dirty, 'Dirty flag');
+      t.notOk(doc.contentDirty, 'Not content dirty');
+      t.ok(doc.deleted > ts, 'Deleted timestamp');
+      t.notOk(doc.active, 'Not active');
+      store.liveStream().reject(function(doc){
+        return doc.type === 'meta';
+      }).pull(function(err, doc){
+        t.equal(doc.type, 'note', 'Note type');
+        t.equal(doc.userId, userId, 'userId');
+        t.notOk(doc.dirty, 'Not dirty after sync');
+        t.notOk(doc.contentDirty, 'Not content dirty after sync');
+        t.ok(doc.deleted, 'Deleted timestamp');
+        t.notOk(doc.active, 'Not active');
+        seq = doc.updateSequenceNum;
+        store.get(userId, function(err, doc){
+          t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
+          seq = doc.lastUpdateCount;
+          t.end();
+        });
+      });
+      ever.sync(token, function(err){
+        t.notOk(err, 'Sync no error');
+      });
+    });
+  });
+  /*
   test('Incremental Sync', function(t){
     //create/update note from another client then sync
   });
   test('Tag Conflict', function(t){
 
   });
+  */
 });
 
