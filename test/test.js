@@ -30,7 +30,7 @@ tokens.forEach(function(token){
       t.notOk(err, 'Sync no error');
       stream.destroy();
       store.get(userId, function(err, doc){
-        t.equal(doc.lastUpdateCount, seq, 'lastUpdateCount');
+        t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
         t.end();
       });
     });
@@ -72,7 +72,7 @@ tokens.forEach(function(token){
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
         store.get(userId, function(err, doc){
-          t.equal(doc.lastUpdateCount, seq, 'lastUpdateCount');
+          t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
           t.end();
         });
       });
