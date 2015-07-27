@@ -2,8 +2,7 @@ var test     = require('tape'),
     rodabase = require('rodabase'),
     memdown  = require('memdown'),
     evernote = require('../'),
-    H        = require('highland'),
-    rest     = require('roda-rest');
+    H        = require('highland');
 
 var roda = rodabase('./db', {db: memdown});
 var store = roda('evernote');
@@ -31,20 +30,22 @@ tokens.forEach(function(token){
       stream.destroy();
       store.get(userId, function(err, doc){
         t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
+        seq = doc.lastUpdateCount;
         t.end();
       });
     });
   });
   var noteGuid;
+  var content = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
+    '"http://xml.evernote.com/pub/enml2.dtd"><en-note>'+
+    '<span style="font-weight:bold;">Hello world '+(new Date())+'.</span></en-note>';
   test('Create Note', function(t){
     var ts = Date.now();
     store.post({
       type: 'note',
       userId: userId,
       title: "Test "+(new Date()),
-      content: '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
-        '"http://xml.evernote.com/pub/enml2.dtd"><en-note>'+
-        '<span style="font-weight:bold;">Hello world '+(new Date())+'.</span></en-note>'
+      content: content
     }, function(err, doc){
       t.ok(doc.dirty, 'Dirty flag');
       t.ok(doc.contentDirty, 'Content dirty flag');
@@ -52,7 +53,6 @@ tokens.forEach(function(token){
       t.ok(doc.updated > ts, 'Updated timestamp');
       t.ok(doc.active, 'Active');
       t.notOk(doc.deleted, 'No deleted timestamp');
-      var content = doc.content;
       store.liveStream().reject(function(doc){
         return doc.type === 'meta';
       }).take(2).toArray(function(list){
@@ -73,6 +73,52 @@ tokens.forEach(function(token){
         seq = doc.updateSequenceNum;
         store.get(userId, function(err, doc){
           t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
+          seq = doc.lastUpdateCount;
+          t.end();
+        });
+      });
+      ever.sync(token, function(err){
+        t.notOk(err, 'Sync no error');
+      });
+    });
+  });
+  test('Update Note', function(t){
+    var tx;
+    var ts = Date.now();
+    tx = roda.transaction();
+    store.put(noteGuid, {
+      title: 'Test Update '+(new Date()),
+      content: content
+    }, tx); //dummy put
+    store.put(noteGuid, {
+      title: 'Test Update '+(new Date()),
+      content: content
+    }, tx, function(err, doc){
+      t.equal(doc.type, 'note', 'Note type');
+      t.equal(doc.userId, userId, 'userId');
+      t.equal(doc.guid, noteGuid, 'Doc guid');
+      t.ok(doc.dirty, 'Dirty flag');
+      t.notOk(doc.contentDirty, 'Not content dirty');
+      t.ok(doc.updated > ts, 'Updated timestamp');
+      t.ok(doc.active, 'Active');
+      t.notOk(doc.deleted, 'No deleted timestamp');
+    });
+    tx.commit(function(err){
+      store.liveStream().reject(function(doc){
+        return doc.type === 'meta';
+      }).pull(function(err, doc){
+        t.equal(doc.guid, noteGuid, 'Doc guid');
+        t.notOk(doc.dirty, 'Not dirty after sync');
+        t.notOk(doc.contentDirty, 'Not content dirty after sync');
+        t.equal(doc.type, 'note', 'Note type');
+        t.equal(doc.userId, userId, 'userId');
+        t.equal(doc.content, content, 'content');
+        t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
+        t.ok(doc.active, 'Active');
+        seq = doc.updateSequenceNum;
+        store.get(userId, function(err, doc){
+          t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
+          seq = doc.lastUpdateCount;
           t.end();
         });
       });
@@ -82,10 +128,8 @@ tokens.forEach(function(token){
     });
   });
   return;
-  test('Update Note', function(t){
-    //update multi times
-    //update title only
-    //update content dirty
+  test('Update note content dirty', function(t){
+    //create/update note from another client then sync
   });
   test('Incremental Sync', function(t){
     //create/update note from another client then sync
