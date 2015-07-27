@@ -38,13 +38,13 @@ tokens.forEach(function(token){
   var noteGuid;
   var content = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
     '"http://xml.evernote.com/pub/enml2.dtd"><en-note>'+
-    '<span style="font-weight:bold;">Hello world '+(new Date())+'.</span></en-note>';
+    '<span style="font-weight:bold;">Content '+(new Date())+'.</span></en-note>';
   test('Create Note', function(t){
     var ts = Date.now();
     store.post({
       type: 'note',
       userId: userId,
-      title: "Test "+(new Date()),
+      title: "Create "+(new Date()),
       content: content
     }, function(err, doc){
       t.ok(doc.dirty, 'Dirty flag');
@@ -87,11 +87,11 @@ tokens.forEach(function(token){
     var ts = Date.now();
     tx = roda.transaction();
     store.put(noteGuid, {
-      title: 'Test Update '+(new Date()),
+      title: 'Dummy '+(new Date()),
       content: content
     }, tx); //dummy put
     store.put(noteGuid, {
-      title: 'Test Update '+(new Date()),
+      title: 'Update '+(new Date()),
       content: content
     }, tx, function(err, doc){
       t.equal(doc.type, 'note', 'Note type');
@@ -127,10 +127,55 @@ tokens.forEach(function(token){
       });
     });
   });
-  return;
-  test('Update note content dirty', function(t){
-    //create/update note from another client then sync
+  test('Update Note content dirty', function(t){
+    var tx;
+    var ts = Date.now();
+    var content2 = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
+      '"http://xml.evernote.com/pub/enml2.dtd"><en-note>'+
+      '<span style="font-weight:bold;">Content2 '+(new Date())+'.</span></en-note>';
+    tx = roda.transaction();
+    store.put(noteGuid, {
+      title: 'Dummy'+(new Date()),
+      content: content2
+    }, tx); //dummy put
+    store.put(noteGuid, {
+      title: 'Update Content '+(new Date()),
+      content: content2
+    }, tx, function(err, doc){
+      t.equal(doc.type, 'note', 'Note type');
+      t.equal(doc.userId, userId, 'userId');
+      t.equal(doc.guid, noteGuid, 'Doc guid');
+      t.ok(doc.dirty, 'Dirty flag');
+      t.ok(doc.contentDirty, 'Content dirty');
+      t.ok(doc.updated > ts, 'Updated timestamp');
+      t.ok(doc.active, 'Active');
+      t.notOk(doc.deleted, 'No deleted timestamp');
+    });
+    tx.commit(function(err){
+      store.liveStream().reject(function(doc){
+        return doc.type === 'meta';
+      }).pull(function(err, doc){
+        t.equal(doc.guid, noteGuid, 'Doc guid');
+        t.notOk(doc.dirty, 'Not dirty after sync');
+        t.notOk(doc.contentDirty, 'Not content dirty after sync');
+        t.equal(doc.type, 'note', 'Note type');
+        t.equal(doc.userId, userId, 'userId');
+        t.equal(doc.content, content2, 'content');
+        t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
+        t.ok(doc.active, 'Active');
+        seq = doc.updateSequenceNum;
+        store.get(userId, function(err, doc){
+          t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
+          seq = doc.lastUpdateCount;
+          t.end();
+        });
+      });
+      ever.sync(token, function(err){
+        t.notOk(err, 'Sync no error');
+      });
+    });
   });
+  return;
   test('Incremental Sync', function(t){
     //create/update note from another client then sync
   });
