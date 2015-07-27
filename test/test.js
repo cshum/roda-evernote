@@ -53,7 +53,6 @@ tokens.forEach(function(token){
       t.ok(doc.active, 'Active');
       t.notOk(doc.deleted, 'No deleted timestamp');
       var content = doc.content;
-      store.liveStream().each(H.log);
       store.liveStream().reject(function(doc){
         return doc.type === 'meta';
       }).take(2).toArray(function(list){
