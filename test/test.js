@@ -14,6 +14,7 @@ tokens.forEach(function(token){
   var seq = 0;
   test('Full sync', function(t){
     var typeSeq = {};
+    var defaultNotebookGuid;
     var stream = store.liveStream().reject(function(doc){
       if(!userId)
         userId = doc.userId;
@@ -23,14 +24,17 @@ tokens.forEach(function(token){
       t.equal(doc.userId, userId, 'userId');
       t.ok(!!doc.guid && !!doc.type, 'Has type and guid');
       seq = doc.updateSequenceNum;
+      if(doc.defaultNotebook)
+        defaultNotebookGuid  = doc.guid;
       typeSeq[doc.type] = seq;
     });
     ever.sync(token, function(err){
       t.notOk(err, 'Sync no error');
       stream.destroy();
-      store.get(userId, function(err, doc){
-        t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
-        seq = doc.lastUpdateCount;
+      store.get(userId, function(err, meta){
+        t.ok(meta.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
+        seq = meta.lastUpdateCount;
+        t.equal(meta.defaultNotebookGuid, defaultNotebookGuid, 'defaultNotebookGuid');
         t.end();
       });
     });
