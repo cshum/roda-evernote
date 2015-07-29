@@ -12,9 +12,9 @@ var tokens = require('./tokens.json');
 tokens.forEach(function(token){
   var userId;
   var seq = 0;
+  var defaultNotebookGuid;
   test('Full sync', function(t){
     var typeSeq = {};
-    var defaultNotebookGuid;
     var stream = store.liveStream().reject(function(doc){
       if(!userId)
         userId = doc.userId;
@@ -56,6 +56,7 @@ tokens.forEach(function(token){
       t.ok(doc.created > ts, 'Created timestamp');
       t.ok(doc.updated > ts, 'Updated timestamp');
       t.ok(doc.active, 'Active');
+      t.equal(doc.notebookGuid, defaultNotebookGuid, 'defaultNotebookGuid');
       t.notOk(doc.deleted, 'No deleted timestamp');
       store.liveStream().reject(function(doc){
         return doc.type === 'meta';
@@ -72,6 +73,7 @@ tokens.forEach(function(token){
         t.equal(doc.type, 'note', 'Note type');
         t.equal(doc.userId, userId, 'userId');
         t.equal(doc.content, content, 'content');
+        t.equal(doc.notebookGuid, defaultNotebookGuid, 'defaultNotebookGuid');
         t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
