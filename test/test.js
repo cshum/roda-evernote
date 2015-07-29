@@ -105,7 +105,7 @@ tokens.forEach(function(token){
       t.equal(doc.guid, noteGuid, 'Doc guid');
       t.ok(doc.dirty, 'Dirty flag');
       t.notOk(doc.contentDirty, 'Not content dirty');
-      t.ok(doc.updated > ts, 'Updated timestamp');
+      t.ok(doc.updated >= ts, 'Updated timestamp');
       t.ok(doc.active, 'Active');
       t.notOk(doc.deleted, 'No deleted timestamp');
     });
@@ -153,7 +153,7 @@ tokens.forEach(function(token){
       t.equal(doc.guid, noteGuid, 'Doc guid');
       t.ok(doc.dirty, 'Dirty flag');
       t.ok(doc.contentDirty, 'Content dirty');
-      t.ok(doc.updated > ts, 'Updated timestamp');
+      t.ok(doc.updated >= ts, 'Updated timestamp');
       t.ok(doc.active, 'Active');
       t.notOk(doc.deleted, 'No deleted timestamp');
     });
@@ -193,7 +193,7 @@ tokens.forEach(function(token){
       t.ok(doc.content, 'Has content');
       t.ok(doc.dirty, 'Dirty flag');
       t.notOk(doc.contentDirty, 'Not content dirty');
-      t.ok(doc.deleted > ts, 'Deleted timestamp');
+      t.ok(doc.deleted >= ts, 'Deleted timestamp');
       t.notOk(doc.active, 'Not active');
       store.liveStream().reject(function(doc){
         return doc.type === 'meta';
