@@ -159,6 +159,13 @@ tokens.forEach(function(token){
         t.ok(doc.dirty, 'Dirty flag');
         t.notOk(doc.contentDirty, 'Not content dirty');
       });
+
+      store.get(userId, tx, function(err, meta){
+        meta.defaultNotebookGuid = id;
+        store.put(userId, meta, tx, function(err, meta){
+          t.equal(meta.defaultNotebookGuid, id, 'Dirty defaultNotebookGuid');
+        });
+      });
     });
     tx.commit(function(){
       store.post({
@@ -191,16 +198,17 @@ tokens.forEach(function(token){
         t.equal(doc.type, 'note', 'Note type');
         t.equal(doc.userId, userId, 'userId');
         t.equal(doc.content, content, 'content');
-        t.equal(doc.notebookGuid, notebookGuid, 'New notebookGuid');
+        t.equal(doc.notebookGuid, notebookGuid, 'Sync notebookGuid');
         t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
       });
       ever.sync(token, function(err){
         t.notOk(err, 'Sync no error');
-        store.get(userId, function(err, doc){
-          t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
-          seq = doc.lastUpdateCount;
+        store.get(userId, function(err, meta){
+          t.ok(meta.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
+          t.equal(meta.defaultNotebookGuid, notebookGuid, 'sync defaultNotebookGuid');
+          seq = meta.lastUpdateCount;
           t.end();
         });
       });
