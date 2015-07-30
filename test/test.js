@@ -24,8 +24,6 @@ tokens.forEach(function(token){
       t.equal(doc.userId, userId, 'userId');
       t.ok(!!doc.guid && !!doc.type, 'Has type and guid');
       seq = doc.updateSequenceNum;
-      if(doc.defaultNotebook)
-        defaultNotebookGuid  = doc.guid;
       typeSeq[doc.type] = seq;
     });
     ever.sync(token, function(err){
@@ -34,7 +32,7 @@ tokens.forEach(function(token){
       store.get(userId, function(err, meta){
         t.ok(meta.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
         seq = meta.lastUpdateCount;
-        t.equal(meta.defaultNotebookGuid, defaultNotebookGuid, 'defaultNotebookGuid');
+        defaultNotebookGuid = meta.defaultNotebookGuid;
         t.end();
       });
     });
@@ -77,14 +75,14 @@ tokens.forEach(function(token){
         t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
+      });
+      ever.sync(token, function(err){
+        t.notOk(err, 'Sync no error');
         store.get(userId, function(err, doc){
           t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
           seq = doc.lastUpdateCount;
           t.end();
         });
-      });
-      ever.sync(token, function(err){
-        t.notOk(err, 'Sync no error');
       });
     });
   });
@@ -122,14 +120,14 @@ tokens.forEach(function(token){
         t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
+      });
+      ever.sync(token, function(err){
+        t.notOk(err, 'Sync no error');
         store.get(userId, function(err, doc){
           t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
           seq = doc.lastUpdateCount;
           t.end();
         });
-      });
-      ever.sync(token, function(err){
-        t.notOk(err, 'Sync no error');
       });
     });
   });
@@ -170,14 +168,14 @@ tokens.forEach(function(token){
         t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
+      });
+      ever.sync(token, function(err){
+        t.notOk(err, 'Sync no error');
         store.get(userId, function(err, doc){
           t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
           seq = doc.lastUpdateCount;
           t.end();
         });
-      });
-      ever.sync(token, function(err){
-        t.notOk(err, 'Sync no error');
       });
     });
   });
@@ -205,14 +203,14 @@ tokens.forEach(function(token){
         t.ok(doc.deleted, 'Deleted timestamp');
         t.notOk(doc.active, 'Not active');
         seq = doc.updateSequenceNum;
+      });
+      ever.sync(token, function(err){
+        t.notOk(err, 'Sync no error');
         store.get(userId, function(err, doc){
           t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
           seq = doc.lastUpdateCount;
           t.end();
         });
-      });
-      ever.sync(token, function(err){
-        t.notOk(err, 'Sync no error');
       });
     });
   });
