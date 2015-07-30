@@ -161,6 +161,13 @@ tokens.forEach(function(token){
       });
     });
     tx.commit(function(){
+      store.post({
+        type: 'notebook',
+        userId: userId,
+        name: name
+      }, function(err, doc){
+        t.ok(err.exists, 'No repeat notebook name');
+      });
       store.liveStream().reject(function(doc){
         return doc.type === 'meta';
       }).take(3).toArray(function(list){
