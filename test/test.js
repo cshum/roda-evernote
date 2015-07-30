@@ -137,7 +137,7 @@ tokens.forEach(function(token){
   test('Create notebook', function(t){
     var tx = roda.transaction();
     var ts = Date.now();
-    var name = 'Test ' + Date.now();
+    var name = Date.now().toString();
     store.post({
       type: 'notebook',
       userId: userId,
@@ -146,6 +146,7 @@ tokens.forEach(function(token){
       var id = doc._id;
       t.ok(doc.dirty, 'Dirty flag');
       t.equal(doc.type, 'notebook', 'Type notebook');
+      t.equal(doc.name, name, 'notebook name');
       t.equal(doc.userId, userId, 'userId');
 
       store.put(noteGuid, {
