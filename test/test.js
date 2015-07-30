@@ -41,6 +41,7 @@ tokens.forEach(function(token){
   var content = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
     '"http://xml.evernote.com/pub/enml2.dtd"><en-note>'+
     '<span style="font-weight:bold;">Content '+(new Date())+'.</span></en-note>';
+
   test('Create note', function(t){
     var ts = Date.now();
     store.post({
@@ -131,6 +132,73 @@ tokens.forEach(function(token){
       });
     });
   });
+
+  var notebookGuid;
+  test('Create notebook', function(t){
+    var tx = roda.transaction();
+    var ts = Date.now();
+    var name = 'Test ' + Date.now();
+    store.post({
+      type: 'notebook',
+      userId: userId,
+      name: name
+    }, tx, function(err, doc){
+      var id = doc._id;
+      t.ok(doc.dirty, 'Dirty flag');
+      t.equal(doc.type, 'notebook', 'Type notebook');
+      t.equal(doc.userId, userId, 'userId');
+
+      store.put(noteGuid, {
+        notebookGuid: id
+      }, tx, function(err, doc){
+        t.equal(doc.type, 'note', 'Note type');
+        t.equal(doc.userId, userId, 'userId');
+        t.equal(doc.guid, noteGuid, 'Doc guid');
+        t.equal(doc.notebookGuid, id, 'Dirty notebookGuid');
+        t.ok(doc.dirty, 'Dirty flag');
+        t.notOk(doc.contentDirty, 'Not content dirty');
+      });
+    });
+    tx.commit(function(){
+      store.liveStream().reject(function(doc){
+        return doc.type === 'meta';
+      }).take(3).toArray(function(list){
+        var link = list[0];
+        var notebook = list[1];
+        var doc = list[2];
+        //link
+        t.equal(link.type, 'link', 'Link');
+        t.equal(link.link, notebook.guid, 'Link to notebook guid');
+        //notebook
+        notebookGuid = notebook.guid;
+        t.notOk(notebook.dirty, 'Not dirty after sync');
+        t.equal(notebook.type, 'notebook', 'type notebook');
+        t.equal(notebook.name, name, 'notebook name');
+        t.equal(notebook.userId, userId, 'userId');
+        t.ok(notebook.updateSequenceNum > seq, 'Seq incremental');
+        seq = notebook.updateSequenceNum;
+        //doc
+        t.notOk(doc.dirty, 'Not dirty after sync');
+        t.notOk(doc.contentDirty, 'Not content dirty after sync');
+        t.equal(doc.type, 'note', 'Note type');
+        t.equal(doc.userId, userId, 'userId');
+        t.equal(doc.content, content, 'content');
+        t.equal(doc.notebookGuid, notebookGuid, 'New notebookGuid');
+        t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
+        t.ok(doc.active, 'Active');
+        seq = doc.updateSequenceNum;
+      });
+      ever.sync(token, function(err){
+        t.notOk(err, 'Sync no error');
+        store.get(userId, function(err, doc){
+          t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
+          seq = doc.lastUpdateCount;
+          t.end();
+        });
+      });
+    });
+  });
+
   test('Update note content', function(t){
     var tx;
     var ts = Date.now();
