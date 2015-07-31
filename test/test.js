@@ -37,34 +37,65 @@ tokens.forEach(function(token){
       });
     });
   });
-  var noteGuid;
+  var noteGuid, tagGuid;
   var content = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
     '"http://xml.evernote.com/pub/enml2.dtd"><en-note>'+
     '<span style="font-weight:bold;">Content '+(new Date())+'.</span></en-note>';
 
-  test('Create note', function(t){
+  test('Create note and tag', function(t){
     var ts = Date.now();
     store.post({
       type: 'note',
       userId: userId,
       title: "Create "+(new Date()),
-      content: content
+      content: content,
+      tags: [ts.toString()]
     }, function(err, doc){
       t.ok(doc.dirty, 'Dirty flag');
       t.ok(doc.contentDirty, 'Content dirty flag');
       t.ok(doc.created > ts, 'Created timestamp');
       t.ok(doc.updated > ts, 'Updated timestamp');
       t.ok(doc.active, 'Active');
+      t.notOk(doc.tags, 'Tags field cleared');
       t.equal(doc.notebookGuid, defaultNotebookGuid, 'defaultNotebookGuid');
       t.notOk(doc.deleted, 'No deleted timestamp');
+
+      store.get(doc.tagGuids[0], function(err, doc){
+        t.ok(doc.dirty, 'Dirty flag');
+        t.equal(doc.type, 'tag', 'type tag');
+        t.equal(doc.userId, userId, 'userId');
+        t.equal(doc.name, ts.toString(), 'tag name');
+        ever.sync(token, function(err){
+          t.notOk(err, 'Sync no error');
+          store.get(userId, function(err, doc){
+            t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
+            seq = doc.lastUpdateCount;
+            t.end();
+          });
+        });
+      });
+
       store.liveStream().reject(function(doc){
         return doc.type === 'meta';
-      }).take(2).toArray(function(list){
-        var link = list[0];
-        var doc = list[1];
-        //link
-        t.equal(link.type, 'link', 'Link');
-        t.equal(link.link, doc.guid, 'Link and doc guid');
+      }).take(4).toArray(function(list){
+        var tagLink = list[0];
+        var tag = list[1];
+        var docLink = list[2];
+        var doc = list[3];
+        //tag link
+        t.equal(tagLink.type, 'link', 'Tag Link');
+        t.equal(tagLink.link, tag.guid, 'Link to tag guid');
+        //tag
+        tagGuid = tag.guid;
+        t.notOk(tag.dirty, 'Not dirty after sync');
+        t.equal(tag.type, 'tag', 'type tag');
+        t.equal(tag.userId, userId, 'userId');
+        t.equal(tag.name, ts.toString(), 'tag name');
+        t.ok(tag.updateSequenceNum > seq, 'Seq incremental');
+        seq = tag.updateSequenceNum;
+        //doc link
+        t.equal(docLink.type, 'link', 'Doc Link');
+        t.equal(docLink.link, doc.guid, 'Link to doc guid');
         //doc
         noteGuid = doc.guid;
         t.notOk(doc.dirty, 'Not dirty after sync');
@@ -73,17 +104,10 @@ tokens.forEach(function(token){
         t.equal(doc.userId, userId, 'userId');
         t.equal(doc.content, content, 'content');
         t.equal(doc.notebookGuid, defaultNotebookGuid, 'defaultNotebookGuid');
+        t.equal(doc.tagGuids[0], tagGuid, 'tagGuid');
         t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
-      });
-      ever.sync(token, function(err){
-        t.notOk(err, 'Sync no error');
-        store.get(userId, function(err, doc){
-          t.ok(doc.lastUpdateCount >= seq, 'lastUpdateCount >= seq');
-          seq = doc.lastUpdateCount;
-          t.end();
-        });
       });
     });
   });
