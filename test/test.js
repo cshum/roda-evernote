@@ -49,7 +49,7 @@ tokens.forEach(function(token){
       userId: userId,
       title: "Create "+(new Date()),
       content: content,
-      tags: [ts.toString()]
+      tags: [ts]
     }, function(err, doc){
       t.ok(doc.dirty, 'Dirty flag');
       t.ok(doc.contentDirty, 'Content dirty flag');
