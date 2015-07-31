@@ -20,7 +20,8 @@
     "evernote": "^1.25.8",
     "extend": "^2.0.1",
     "ginga": "^1.0.0",
-    "highland": "^2.5.1"
+    "highland": "^2.5.1",
+    "rodabase": "^1.3.4"
   },
   "devDependencies": {
     "express": "^4.13.1",
