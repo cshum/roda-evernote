@@ -37,13 +37,14 @@ tokens.forEach(function(token){
       });
     });
   });
-  var noteGuid, tagGuid;
+  var noteGuid, tag1Guid, ts1;
   var content = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM '+
     '"http://xml.evernote.com/pub/enml2.dtd"><en-note>'+
     '<span style="font-weight:bold;">Content '+(new Date())+'.</span></en-note>';
 
   test('Create note and tag', function(t){
     var ts = Date.now();
+    ts1 = ts;
     store.post({
       type: 'note',
       userId: userId,
@@ -86,7 +87,7 @@ tokens.forEach(function(token){
         t.equal(tagLink.type, 'link', 'Tag Link');
         t.equal(tagLink.link, tag.guid, 'Link to tag guid');
         //tag
-        tagGuid = tag.guid;
+        tag1Guid = tag.guid;
         t.notOk(tag.dirty, 'Not dirty after sync');
         t.equal(tag.type, 'tag', 'type tag');
         t.equal(tag.userId, userId, 'userId');
@@ -104,16 +105,18 @@ tokens.forEach(function(token){
         t.equal(doc.userId, userId, 'userId');
         t.equal(doc.content, content, 'content');
         t.equal(doc.notebookGuid, defaultNotebookGuid, 'defaultNotebookGuid');
-        t.equal(doc.tagGuids[0], tagGuid, 'tagGuid');
+        t.equal(doc.tagGuids[0], tag1Guid, 'tag 1 Guid');
         t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
       });
     });
   });
-  test('Update note', function(t){
+  var ts2, tag2Guid;
+  test('Update note and tags', function(t){
     var tx;
     var ts = Date.now();
+    ts2 = ts;
     tx = roda.transaction();
     store.put(noteGuid, {
       title: 'Dummy '+(new Date()),
@@ -121,27 +124,51 @@ tokens.forEach(function(token){
     }, tx); //dummy put
     store.put(noteGuid, {
       title: 'Update '+(new Date()),
-      content: content
+      content: content,
+      tags: [ts1, ts2]
     }, tx, function(err, doc){
       t.equal(doc.type, 'note', 'Note type');
       t.equal(doc.userId, userId, 'userId');
       t.equal(doc.guid, noteGuid, 'Doc guid');
+      t.equal(doc.tagGuids[0], tag1Guid, 'tag1Guid');
       t.ok(doc.dirty, 'Dirty flag');
       t.notOk(doc.contentDirty, 'Not content dirty');
       t.ok(doc.updated >= ts, 'Updated timestamp');
       t.ok(doc.active, 'Active');
       t.notOk(doc.deleted, 'No deleted timestamp');
+      store.get(doc.tagGuids[1], tx, function(err, doc){
+        t.ok(doc.dirty, 'Dirty flag');
+        t.equal(doc.type, 'tag', 'type tag');
+        t.equal(doc.userId, userId, 'userId');
+        t.equal(doc.name, ts.toString(), 'tag2 name');
+      });
     });
     tx.commit(function(err){
       store.liveStream().reject(function(doc){
         return doc.type === 'meta';
-      }).pull(function(err, doc){
+      }).take(3).toArray(function(list){
+        var tagLink = list[0];
+        var tag = list[1];
+        var doc = list[2];
+        //tag link
+        t.equal(tagLink.type, 'link', 'Tag Link');
+        t.equal(tagLink.link, tag.guid, 'Link to tag guid');
+        //tag
+        tag2Guid = tag.guid;
+        t.notOk(tag.dirty, 'Not dirty after sync');
+        t.equal(tag.type, 'tag', 'type tag');
+        t.equal(tag.userId, userId, 'userId');
+        t.equal(tag.name, ts.toString(), 'tag2 name');
+        t.ok(tag.updateSequenceNum > seq, 'Seq incremental');
+        seq = tag.updateSequenceNum;
+        //doc
         t.equal(doc.guid, noteGuid, 'Doc guid');
         t.notOk(doc.dirty, 'Not dirty after sync');
         t.notOk(doc.contentDirty, 'Not content dirty after sync');
         t.equal(doc.type, 'note', 'Note type');
         t.equal(doc.userId, userId, 'userId');
         t.equal(doc.content, content, 'content');
+        t.deepEqual(doc.tagGuids, [tag1Guid, tag2Guid], 'tagGuids');
         t.ok(doc.updateSequenceNum > seq, 'Seq incremental');
         t.ok(doc.active, 'Active');
         seq = doc.updateSequenceNum;
