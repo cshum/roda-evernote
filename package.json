@@ -4,7 +4,8 @@
   "description": "Evernote synchronization with Rodabase.",
   "author": "Adrian C Shum <adrian@cshum.com>",
   "scripts": {
-    "test": "set -e; for t in test/*.js; do node $t; done"
+    "test": "node test/test.js",
+    "test-server": "node test/server.js"
   },
   "repository": {
     "type": "git",
@@ -26,7 +27,7 @@
     "express": "^4.13.1",
     "memdown": "^1.0.0",
     "roda-rest": "^0.3.0",
-    "rodabase": "^1.4.0",
+    "rodabase": "^1.6.0",
     "tape": "^3.0.3"
   }
 }
