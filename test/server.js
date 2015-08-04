@@ -4,7 +4,8 @@ var rodabase = require('rodabase'),
     rest     = require('roda-rest');
 
 var roda = rodabase('./db');
-var ever = evernote(roda('evernote'));
+var blobs = require('fs-blob-store')('./blobs');
+var ever = evernote(roda('evernote'), { blobs: blobs });
 
 var app = express();
 app.get('/api/sync/:token', function(req, res){
@@ -13,5 +14,10 @@ app.get('/api/sync/:token', function(req, res){
   });
 });
 app.use('/api', rest(roda)); //roda rest api
+app.use('/blobs/:hash', function(req, res){
+  blobs.createReadStream({
+    key: req.params.hash
+  }).pipe(res);
+}); //roda rest api
 app.listen(3000);
 console.log('roda-evernote is listening on port '+ 3000);

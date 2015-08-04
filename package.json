@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "express": "^4.13.1",
+    "fs-blob-store": "^5.1.1",
     "memdown": "^1.0.0",
     "roda-rest": "^0.3.0",
     "rodabase": "^1.6.0",
