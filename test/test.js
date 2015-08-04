@@ -6,7 +6,7 @@ var test     = require('tape'),
 
 var roda = rodabase('./db', {db: memdown});
 var store = roda('evernote');
-var ever = evernote(roda, 'evernote');
+var ever = evernote(store);
 var tokens = require('./tokens.json');
 
 tokens.forEach(function(token){
