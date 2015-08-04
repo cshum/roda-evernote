@@ -9,6 +9,8 @@ var store = roda('evernote');
 var ever = evernote(store);
 var tokens = require('./tokens.json');
 
+//Evernbote API does not have expunge permission, cannot test expunge 
+
 tokens.forEach(function(token){
   var userId;
   var seq = 0;
