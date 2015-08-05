@@ -14,10 +14,13 @@ app.get('/api/sync/:token', function(req, res){
   });
 });
 app.use('/api', rest(roda)); //roda rest api
-app.use('/blobs/:hash', function(req, res){
-  blobs.createReadStream({
-    key: req.params.hash
-  }).pipe(res);
-}); //roda rest api
+app.use('/blobs/:key', function(req, res, next){
+  blobs.createReadStream({ key: req.params.key })
+    .on('error', next)
+    .pipe(res);
+}); 
+app.use(function(err, req, res, next){
+  res.json(err);
+});
 app.listen(3000);
 console.log('roda-evernote is listening on port '+ 3000);
