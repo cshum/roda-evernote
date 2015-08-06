@@ -14,8 +14,8 @@ app.get('/api/sync/:token', function(req, res){
   });
 });
 app.use('/api', rest(roda)); //roda rest api
-app.use('/resources/:key', function(req, res, next){
-  resources.createReadStream({ key: req.params.key })
+app.use('/resources/:userId/:hash', function(req, res, next){
+  resources.createReadStream({ key: req.params.userId + '/' + req.params.hash })
     .on('error', next)
     .pipe(res);
 }); 
