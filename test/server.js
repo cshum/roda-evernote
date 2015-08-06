@@ -4,8 +4,8 @@ var rodabase = require('rodabase'),
     rest     = require('roda-rest');
 
 var roda = rodabase('./db');
-var blobs = require('fs-blob-store')('./blobs');
-var ever = evernote(roda('evernote'), { blobs: blobs });
+var resources = require('fs-blob-store')('./resources');
+var ever = evernote(roda('evernote'), { resources: resources });
 
 var app = express();
 app.get('/api/sync/:token', function(req, res){
@@ -14,8 +14,8 @@ app.get('/api/sync/:token', function(req, res){
   });
 });
 app.use('/api', rest(roda)); //roda rest api
-app.use('/blobs/:key', function(req, res, next){
-  blobs.createReadStream({ key: req.params.key })
+app.use('/resources/:key', function(req, res, next){
+  resources.createReadStream({ key: req.params.key })
     .on('error', next)
     .pipe(res);
 }); 
